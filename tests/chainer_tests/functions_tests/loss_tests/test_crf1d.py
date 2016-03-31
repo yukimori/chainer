@@ -8,15 +8,21 @@ from chainer import gradient_check
 
 
 class TestCRF1d(unittest.TestCase):
+
     batch = 2
 
     def setUp(self):
         self.cost = numpy.random.uniform(-1, 1, (3, 3)).astype(numpy.float32)
-        self.x1 = numpy.random.uniform(-1, 1, (self.batch, 3)).astype(numpy.float32)
-        self.x2 = numpy.random.uniform(-1, 1, (self.batch, 3)).astype(numpy.float32)
-        self.y1 = numpy.random.randint(0, 3, (self.batch,)).astype(numpy.int32)
-        self.y2 = numpy.random.randint(0, 3, (self.batch,)).astype(numpy.int32)
-        self.gy = numpy.random.uniform(-1, 1, (self.batch,)).astype(numpy.float32)
+        self.x1 = numpy.random.uniform(
+            -1, 1, (self.batch, 3)).astype(numpy.float32)
+        self.x2 = numpy.random.uniform(
+            -1, 1, (self.batch, 3)).astype(numpy.float32)
+        self.y1 = numpy.random.randint(
+            0, 3, (self.batch,)).astype(numpy.int32)
+        self.y2 = numpy.random.randint(
+            0, 3, (self.batch,)).astype(numpy.int32)
+        self.gy = numpy.random.uniform(
+            -1, 1, (self.batch,)).astype(numpy.float32)
 
     def test_forward(self):
         cost = chainer.Variable(self.cost)
