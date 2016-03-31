@@ -140,7 +140,6 @@ bernoulli_nll = vae.bernoulli_nll
 BinaryHierarchicalSoftmax = hierarchical_softmax.BinaryHierarchicalSoftmax
 Contrastive = contrastive.Contrastive
 contrastive = contrastive.contrastive
-CRF1d = crf1d.CRF1d
 crf1d = crf1d.crf1d
 CrossCovariance = cross_covariance.CrossCovariance
 cross_covariance = cross_covariance.cross_covariance
