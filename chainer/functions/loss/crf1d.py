@@ -7,6 +7,8 @@ from chainer.functions.math import minmax
 
 
 def crf1d(cost, xs, ys):
+    assert xs[0].data.shape[1] == cost.data.shape[0]
+    
     n_label = cost.data.shape[0]
     n_batch = xs[0].data.shape[0]
 
