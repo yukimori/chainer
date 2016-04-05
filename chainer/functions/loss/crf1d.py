@@ -38,10 +38,10 @@ def crf1d_viterbi(cost, xs):
     for x in xs[1:]:
         b_alpha, b_cost = broadcast.broadcast(
             reshape.reshape(alpha, (n_batch, n_label, 1)), cost)
-        cost = b_alpha + b_cost
-        max_ind = minmax.argmax(cost, axis=1)
+        scores = b_alpha + b_cost
+        max_ind = minmax.argmax(scores, axis=1)
         max_inds.append(max_ind)
-        alpha = minmax.max(cost, axis=1) + x
+        alpha = minmax.max(scores, axis=1) + x
 
     inds = minmax.argmax(alpha, axis=1).data
     path = [inds]
