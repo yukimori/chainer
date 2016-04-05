@@ -4,6 +4,7 @@ from chainer.functions.array import reshape
 from chainer.functions.array import select_item
 from chainer.functions.math import logsumexp
 from chainer.functions.math import minmax
+from chainer.functions.math import sum as _sum
 
 
 def crf1d(cost, xs, ys):
@@ -59,7 +60,7 @@ def crf1d(cost, xs, ys):
     for x, y in zip(xs, ys):
         score += select_item.select_item(x, y)
 
-    return logz - score
+    return _sum.sum(logz - score) / n_batch
 
 
 def crf1d_viterbi(cost, xs):

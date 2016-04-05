@@ -46,7 +46,7 @@ class TestCRF1d(unittest.TestCase):
                  self.cost[self.ys[0], self.ys[1]] +
                  self.cost[self.ys[1], self.ys[2]])
 
-        expect = -(score - numpy.log(z))
+        expect = numpy.sum(-(score - numpy.log(z))) / self.batch
         gradient_check.assert_allclose(log_p.data, expect)
 
     def test_backward(self):
@@ -54,7 +54,6 @@ class TestCRF1d(unittest.TestCase):
         xs = [chainer.Variable(self.xs[i]) for i in range(3)]
         ys = [chainer.Variable(self.ys[i]) for i in range(3)]
         log_p = functions.crf1d(cost, xs, ys)
-        log_p.grad = self.gy
         log_p.backward()
 
     def test_viterbi(self):
