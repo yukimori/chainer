@@ -1,7 +1,7 @@
 from chainer.functions.array import broadcast
-from chainer.functions.connection import embed_id
 from chainer.functions.array import reshape
 from chainer.functions.array import select_item
+from chainer.functions.connection import embed_id
 from chainer.functions.math import logsumexp
 from chainer.functions.math import minmax
 from chainer.functions.math import sum as _sum
@@ -40,7 +40,7 @@ def crf1d(cost, xs, ys):
             sequence.
     """
     assert xs[0].data.shape[1] == cost.data.shape[0]
-    
+
     n_label = cost.data.shape[0]
     n_batch = xs[0].data.shape[0]
 
