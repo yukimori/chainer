@@ -1,10 +1,5 @@
-from chainer import cuda
-from chainer.fuctions import minmax
-from chainer import variable
+from chainer.functions.math import clip
 
 
 def hard_sigmoid(x):
-    xp = cuda.get_array_module(x)
-    zero = variable.Variable(xp.zeros_like(x.data))
-    one = variable.Variable(xp.ones_like(x.data))
-    return minmax.max(zero, minmax.min(one, x * 0.2 + 0.5))
+    return clip.clip(x * 0.2 + 0.5, 0.0, 1.0)
