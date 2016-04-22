@@ -13,6 +13,7 @@ from chainer.links.connection import linear
 from chainer.links.connection import lstm
 from chainer.links.connection import mlp_convolution_2d
 from chainer.links.connection import parameter
+from chainer.links.loss import black_out
 from chainer.links.loss import crf1d
 from chainer.links.loss import hierarchical_softmax
 from chainer.links.loss import negative_sampling
@@ -36,6 +37,7 @@ LSTM = lstm.LSTM
 MLPConvolution2D = mlp_convolution_2d.MLPConvolution2D
 Parameter = parameter.Parameter
 
+BlackOut = black_out.BlackOut
 CRF1d = crf1d.CRF1d
 BinaryHierarchicalSoftmax = hierarchical_softmax.BinaryHierarchicalSoftmax
 NegativeSampling = negative_sampling.NegativeSampling
