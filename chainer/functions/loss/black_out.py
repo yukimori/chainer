@@ -26,4 +26,4 @@ def black_out(x, t, W, samples):
     ny = exponential.log(1 - exponential.exp(bneg_y - blogz))
     py = reshape.reshape(pos_y, (batch_size,))
     loss = py - logz + _sum.sum(ny, axis=1)
-    return _sum.sum(loss) / batch_size
+    return -_sum.sum(loss) / batch_size
