@@ -9,6 +9,15 @@ from chainer.utils import walker_alias
 
 class BlackOut(link.Link):
 
+    """BlackOut loss layer.
+
+    .. seealso:: :func:`~chainer.functions.black_out` for more detail.
+
+    Attributes:
+        W (~chainer.Variable): Weight parameter matrix.
+
+    """
+
     def __init__(self, in_size, counts, sample_size):
         vocab_size = len(counts)
         super(BlackOut, self).__init__(W=(vocab_size, in_size))

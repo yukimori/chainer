@@ -10,6 +10,39 @@ from chainer.functions.math import sum as _sum
 
 
 def black_out(x, t, W, samples):
+    """BlackOut loss function.
+
+    BlackOut loss function is defined as
+
+    .. math::
+
+      -\\log(p(t)) - \\sum_{s \\in S} \\log(1 - p(s)),
+
+    where :math:`t` is the correct label, :math:`S` is a set of negative
+    examples and :math:`p(\dot)` is likelihood of a given label.
+    And, :math:`p` is defined as
+
+    .. math::
+
+       p(y) = \\frac{\\exp(W_y^\\trans x)}{
+       \\sum_{s \\in samples} \\exp(W_s^\\trans x)}.
+
+    Args:
+        x (~chainer.Variable): Batch of input vectors.
+        t (~chainer.Variable): Vector of ground truth labels.
+        W (~chainer.Variable): Weight matrix.
+        samples (~chainer.Variable): Negative samples.
+
+    Returns:
+        ~chainer.Variable: Loss value.
+
+    See: `BlackOut: Speeding up Recurrent Neural Network Language Models With \
+         Very Large Vocabularies <http://arxiv.org/abs/1511.06909>`_
+
+    .. seealso:: :class:`~chainer.links.BlackOut`.
+
+    """
+
     batch_size = x.data.shape[0]
 
     neg_emb = embed_id.embed_id(samples, W)
