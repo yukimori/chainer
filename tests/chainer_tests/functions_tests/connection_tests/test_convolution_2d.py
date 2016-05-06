@@ -15,6 +15,8 @@ from chainer.testing import condition
 
 @testing.parameterize(*testing.product({
     'c_contiguous': [True, False],
+    'x_dtype': [numpy.float16, numpy.float32, numpy.float64],
+    'W_dtype': [numpy.float16, numpy.float32, numpy.float64],
 }))
 class TestConvolution2DFunction(unittest.TestCase):
 
@@ -27,14 +29,20 @@ class TestConvolution2DFunction(unittest.TestCase):
         self.use_cudnn = use_cudnn
         self.W = numpy.random.normal(
             0, numpy.sqrt(1. / (kh * kw * in_channels)),
-            (out_channels, in_channels, kh, kw)).astype(numpy.float32)
+            (out_channels, in_channels, kh, kw)).astype(self.W_dtype)
         self.b = numpy.random.uniform(
-            -1, 1, out_channels).astype(numpy.float32)
+            -1, 1, out_channels).astype(self.x_dtype)
 
-        self.x = numpy.random.uniform(-1, 1,
-                                      (2, 3, 4, 3)).astype(numpy.float32)
-        self.gy = numpy.random.uniform(-1, 1,
-                                       (2, 2, 2, 2)).astype(numpy.float32)
+        self.x = numpy.random.uniform(
+            -1, 1, (2, 3, 4, 3)).astype(self.x_dtype)
+        self.gy = numpy.random.uniform(
+            -1, 1, (2, 2, 2, 2)).astype(self.x_dtype)
+        if self.x_dtype == numpy.float16:
+            self.check_backward_options = {'atol': 0.5, 'rtol': 0.5}
+        elif self.W_dtype == numpy.float16:
+            self.check_backward_options = {'atol': 0.05, 'rtol': 0.05}
+        else:
+            self.check_backward_options = {}
 
     @attr.cudnn
     def test_forward_consistency(self, nobias=False):
@@ -86,7 +94,7 @@ class TestConvolution2DFunction(unittest.TestCase):
         gradient_check.check_backward(
             convolution_2d.Convolution2DFunction(
                 self.stride, self.pad, self.use_cudnn),
-            args, y_grad, eps=1e-2)
+            args, y_grad, eps=1e-2, **self.check_backward_options)
 
     @condition.retry(3)
     def test_backward_cpu(self):
@@ -123,10 +131,13 @@ class TestConvolution2DFunction(unittest.TestCase):
                             None, cuda.to_gpu(self.gy))
 
 
-@testing.parameterize(
-    {'use_cudnn': True},
-    {'use_cudnn': False},
-)
+@testing.parameterize(*testing.product({
+    'use_cudnn': [True, False],
+    'dtypes': [(numpy.float16, numpy.float16),
+               (numpy.float16, numpy.float32),
+               (numpy.float32, numpy.float32),
+               (numpy.float64, numpy.float64)]
+}))
 @attr.cudnn
 class TestConvolution2DCudnnCall(unittest.TestCase):
 
@@ -143,6 +154,9 @@ class TestConvolution2DCudnnCall(unittest.TestCase):
             (out_channels, in_channels, kh, kw)).astype(numpy.float32)
         self.gy = cuda.cupy.random.uniform(
             -1, 1, (2, 2, 2, 2)).astype(numpy.float32)
+        self.skip_test = (
+            self.cudnn and self.dtypes[0] == numpy.float16 and
+            int(cuda.Device().compute_capability) < 53)
 
     def forward(self):
         x = chainer.Variable(self.x)
@@ -159,11 +173,15 @@ class TestConvolution2DCudnnCall(unittest.TestCase):
     def test_call_cudnn_backrward(self):
         y = self.forward()
         y.grad = self.gy
-        v2 = 'cupy.cudnn.cudnn.convolutionBackwardData_v2'
-        v3 = 'cupy.cudnn.cudnn.convolutionBackwardData_v3'
-        with mock.patch(v2) as func_v2, mock.patch(v3) as func_v3:
+        if self.skip_test:
+            return
+        if cuda.cudnn.cudnn.getVersion() >= 4000:
+            name = 'cupy.cudnn.cudnn.convolutionBackwardData_v3'
+        else:
+            name = 'cupy.cudnn.cudnn.convolutionBackwardData_v2'
+        with mock.patch(name) as func:
             y.backward()
-            self.assertEqual(func_v2.called or func_v3.called, self.use_cudnn)
+            self.assertEqual(func.called, self.use_cudnn)
 
 
 testing.run_module(__name__, __file__)
