@@ -133,10 +133,7 @@ class TestConvolution2DFunction(unittest.TestCase):
 
 @testing.parameterize(*testing.product({
     'use_cudnn': [True, False],
-    'dtypes': [(numpy.float16, numpy.float16),
-               (numpy.float16, numpy.float32),
-               (numpy.float32, numpy.float32),
-               (numpy.float64, numpy.float64)]
+    'dtype': [numpy.float16, numpy.float32, numpy.float64],
 }))
 @attr.cudnn
 class TestConvolution2DCudnnCall(unittest.TestCase):
@@ -148,15 +145,15 @@ class TestConvolution2DCudnnCall(unittest.TestCase):
         self.stride = 2
         self.pad = 1
         self.x = cuda.cupy.random.uniform(
-            -1, 1, (2, 3, 4, 3)).astype(numpy.float32)
+            -1, 1, (2, 3, 4, 3)).astype(self.dtype)
         self.W = cuda.cupy.random.normal(
             0, numpy.sqrt(1. / (kh * kw * in_channels)),
-            (out_channels, in_channels, kh, kw)).astype(numpy.float32)
+            (out_channels, in_channels, kh, kw)).astype(self.dtype)
         self.gy = cuda.cupy.random.uniform(
-            -1, 1, (2, 2, 2, 2)).astype(numpy.float32)
+            -1, 1, (2, 2, 2, 2)).astype(self.dtype)
         self.skip_test = (
-            self.cudnn and self.dtypes[0] == numpy.float16 and
-            int(cuda.Device().compute_capability) < 53)
+            self.cudnn and self.dtype == numpy.float16 and
+            cuda.cudnn.cudnn.getVersion() < 3000)
 
     def forward(self):
         x = chainer.Variable(self.x)
@@ -166,15 +163,17 @@ class TestConvolution2DCudnnCall(unittest.TestCase):
             use_cudnn=self.use_cudnn)
 
     def test_call_cudnn_forward(self):
+        if self.skip_test:
+            return
         with mock.patch('cupy.cudnn.cudnn.convolutionForward') as func:
             self.forward()
             self.assertEqual(func.called, self.use_cudnn)
 
     def test_call_cudnn_backrward(self):
-        y = self.forward()
-        y.grad = self.gy
         if self.skip_test:
             return
+        y = self.forward()
+        y.grad = self.gy
         if cuda.cudnn.cudnn.getVersion() >= 4000:
             name = 'cupy.cudnn.cudnn.convolutionBackwardData_v3'
         else:

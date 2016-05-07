@@ -122,8 +122,9 @@ class Deconvolution2DFunction(function.Function):
                 self.bias_desc = cudnn.create_tensor_descriptor(
                     b[None, :, None, None])
 
-            one = numpy.array(1, dtype=x.dtype).ctypes
-            zero = numpy.array(0, dtype=x.dtype).ctypes
+            oz_dtype = 'd' if x.dtype == 'd' else 'f'
+            one = numpy.array(1, dtype=oz_dtype).ctypes
+            zero = numpy.array(0, dtype=oz_dtype).ctypes
 
             if _cudnn_version >= 4000:
                 workspace_size = cuda.get_max_workspace_size()
@@ -205,8 +206,9 @@ class Deconvolution2DFunction(function.Function):
                 workspace_size)
             workspace = cuda.cupy.empty((workspace_size,), dtype='b')
 
-            one = numpy.array(1, dtype=x.dtype).ctypes
-            zero = numpy.array(0, dtype=x.dtype).ctypes
+            oz_dtype = 'd' if x.dtype == 'd' else 'f'
+            one = numpy.array(1, dtype=oz_dtype).ctypes
+            zero = numpy.array(0, dtype=oz_dtype).ctypes
 
             libcudnn.convolutionForward(
                 handle, one.data, gy_desc.value, gy.data.ptr,

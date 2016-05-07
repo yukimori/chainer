@@ -18,14 +18,9 @@ if cuda.cudnn_enabled:
             libcudnn.CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT
 
 
-@cuda.memoize(for_each_device=True)
 def _check_cudnn_acceptable_type(x_dtype, W_dtype):
-    if x_dtype == W_dtype:
-        if x_dtype == numpy.float16:
-            return int(cuda.Device().compute_capability) >= 53
-        return True
-    # return x_dtype == numpy.float16 and W_dtype == numpy.float32
-    return False
+    return x_dtype == W_dtype and (
+        _cudnn_version >= 3000 or x_dtype != numpy.float16)
 
 
 def _pair(x):
@@ -111,9 +106,9 @@ class Convolution2DFunction(function.Function):
                 self.conv_desc.value, y_desc.value, _fwd_pref,
                 workspace_size)
 
-            dtype = x.dtype
-            one = numpy.array(1, dtype=dtype).ctypes
-            zero = numpy.array(0, dtype=dtype).ctypes
+            oz_dtype = 'd' if x.dtype == 'd' else 'f'
+            one = numpy.array(1, dtype=oz_dtype).ctypes
+            zero = numpy.array(0, dtype=oz_dtype).ctypes
             libcudnn.convolutionForward(
                 handle, one.data, x_desc.value, x.data.ptr,
                 self.filter_desc.value, W.data.ptr, self.conv_desc.value,
@@ -177,9 +172,9 @@ class Convolution2DFunction(function.Function):
             handle = cudnn.get_handle()
             x_desc = cudnn.create_tensor_descriptor(x)
             gy_desc = cudnn.create_tensor_descriptor(gy)
-            dtype = x.dtype
-            one = numpy.array(1, dtype=dtype).ctypes
-            zero = numpy.array(0, dtype=dtype).ctypes
+            oz_dtype = 'd' if x.dtype == 'd' else 'f'
+            one = numpy.array(1, dtype=oz_dtype).ctypes
+            zero = numpy.array(0, dtype=oz_dtype).ctypes
             gx = cuda.cupy.empty_like(x)
 
             if _cudnn_version >= 4000:

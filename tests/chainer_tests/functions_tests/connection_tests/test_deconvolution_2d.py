@@ -130,10 +130,7 @@ class TestDeconvolution2DFunction(unittest.TestCase):
 
 @testing.parameterize(*testing.product({
     'use_cudnn': [True, False],
-    'dtypes': [(numpy.float16, numpy.float16),
-               (numpy.float16, numpy.float32),
-               (numpy.float32, numpy.float32),
-               (numpy.float64, numpy.float64)]
+    'dtype': [numpy.float16, numpy.float32, numpy.float64],
 }))
 @attr.cudnn
 class TestDeconvolution2DCudnnCall(unittest.TestCase):
@@ -147,18 +144,18 @@ class TestDeconvolution2DCudnnCall(unittest.TestCase):
         self.W = cuda.cupy.random.normal(
             0, numpy.sqrt(1. / (kh * kw * self.in_channels)),
             (self.in_channels, self.out_channels, kh, kw)
-        ).astype(self.dtypes[1])
+        ).astype(self.dtype)
         N = 2
         inh, inw = 4, 3
         outh = conv.get_deconv_outsize(inh, kh, sh, ph)
         outw = conv.get_deconv_outsize(inw, kw, sw, pw)
         self.x = cuda.cupy.random.uniform(
-            -1, 1, (N, self.in_channels, inh, inw)).astype(self.dtypes[0])
+            -1, 1, (N, self.in_channels, inh, inw)).astype(self.dtype)
         self.gy = cuda.cupy.random.uniform(
-            -1, 1, (N, self.out_channels, outh, outw)).astype(self.dtypes[0])
+            -1, 1, (N, self.out_channels, outh, outw)).astype(self.dtype)
         self.skip_test = (
-            self.cudnn and self.dtypes[0] == numpy.float16 and
-            int(cuda.Device().compute_capability) < 53)
+            self.cudnn and self.dtype == numpy.float16 and
+            cuda.cudnn.cudnn.getVersion() < 3000)
 
     def forward(self):
         x = chainer.Variable(self.x)
