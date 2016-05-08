@@ -11,17 +11,23 @@ from chainer.testing import attr
 from chainer.testing import condition
 
 
+@testing.parameterize(*testing.product({
+    'dtype': [numpy.float16, numpy.float32, numpy.float64],
+}))
 class TestAccuracy(unittest.TestCase):
 
     def setUp(self):
-        self.x = numpy.random.uniform(-1, 1, (10, 3)).astype(numpy.float32)
+        self.x = numpy.random.uniform(-1, 1, (10, 3)).astype(self.dtype)
         self.t = numpy.random.randint(3, size=(10,)).astype(numpy.int32)
+        self.check_forward_options = {}
+        if self.dtype == numpy.float16:
+            self.check_forward_options = {'atol': 1e-4, 'rtol': 1e-3}
 
     def check_forward(self, x_data, t_data):
         x = chainer.Variable(x_data)
         t = chainer.Variable(t_data)
         y = chainer.functions.accuracy(x, t)
-        self.assertEqual(y.data.dtype, numpy.float32)
+        self.assertEqual(y.data.dtype, self.dtype)
         self.assertEqual((), y.data.shape)
 
         count = 0
@@ -31,7 +37,8 @@ class TestAccuracy(unittest.TestCase):
                 count += 1
 
         expected = float(count) / self.t.size
-        gradient_check.assert_allclose(expected, cuda.to_cpu(y.data))
+        gradient_check.assert_allclose(
+            expected, cuda.to_cpu(y.data), **self.check_forward_options)
 
     @condition.retry(3)
     def test_forward_cpu(self):
