@@ -3,6 +3,7 @@ import atexit
 import numpy
 import six
 
+import cupy
 from cupy import cuda
 from cupy.cuda import cudnn
 
@@ -197,6 +198,11 @@ def get_rnn_lin_layer_bias_params(
     size = numpy.prod(dim)
     bias = w[offset: offset+size]
     return bias
+
+
+def create_dropout_states(handle):
+    state_size = cudnn.dropoutGetStatesSize(handle)
+    return cupy.empty((state_size,), dtype='b')
 
 
 if _cudnn_version >= 3000:
