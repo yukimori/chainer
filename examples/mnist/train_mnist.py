@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding:utf-8 -*-
 """Chainer example: train a multi-layer perceptron on MNIST
 
 This is a minimal example to write a feed-forward net.
@@ -38,8 +39,11 @@ parser.add_argument('--batchsize', '-b', type=int, default=100,
                     help='learning minibatch size')
 args = parser.parse_args()
 
+# 確率的勾配降下法で学習させる際の1回分のバッチサイズ
 batchsize = args.batchsize
+# 学習の繰り返し回数
 n_epoch = args.epoch
+# 中間層の数
 n_units = args.unit
 
 print('GPU: {}'.format(args.gpu))
@@ -51,18 +55,35 @@ print('')
 
 # Prepare dataset
 print('load MNIST dataset')
+# データの取得 scikit-learn依存から独自に変更されている？
 mnist = data.load_mnist_data()
+# mnistデータは70000件の784次元ベクトルデータと思われる
 mnist['data'] = mnist['data'].astype(np.float32)
+# 0-1のデータに変換
 mnist['data'] /= 255
+# 正解（教師）のデータ（dataがどの数値かを表す）
 mnist['target'] = mnist['target'].astype(np.int32)
 
+# 学習データをN（60000）、検証データを残りの個数と設定
+# dataが画像データ、targetは画像がどの数値を表す数値データ
 N = 60000
 x_train, x_test = np.split(mnist['data'],   [N])
 y_train, y_test = np.split(mnist['target'], [N])
+print(type(x_train))
+print("x_train.shape:{0},x_test.shape{1}".format(x_train.shape, x_test.shape))
+print("y_train.shape:{0},y_test.shape{1}".format(y_train.shape, y_test.shape))
+
 N_test = y_test.size
 
+
+# model作成
 # Prepare multi-layer perceptron model, defined in net.py
 if args.net == 'simple':
+    # net.pyに実装が移動しているが作成されているのは3層NN
+    # 入力データが784次元なので入力素子は784個。中間層はn_unitsでデフォルト1000と指定
+    # 出力は数字を識別するので10個
+    # L:chainer.links MLP 各層が100個のユニットをもつ三層のネットワーク
+    # Classifierクラスは損失と精度を計算し、損失値を返却する
     model = L.Classifier(net.MnistMLP(784, n_units, 10))
     if args.gpu >= 0:
         cuda.get_device(args.gpu).use()
@@ -74,6 +95,8 @@ elif args.net == 'parallel':
     xp = cuda.cupy
 
 # Setup optimizer
+# optimizerにmodelを設定する
+# 最適化手法としてAdamを利用
 optimizer = optimizers.Adam()
 optimizer.setup(model)
 
@@ -86,21 +109,39 @@ if args.resume:
     serializers.load_npz(args.resume, optimizer)
 
 # Learning loop
+# sixはバージョンニュートラルなコードを記述するためのライブラリ
+# six.rangeはpython2ではxrangeとして処理することができる（python3ではrange）
 for epoch in six.moves.range(1, n_epoch + 1):
     print('epoch', epoch)
 
     # training
+    # permutationにより0からN-1までの数値をランダムに並び替えたarrayを返却する
     perm = np.random.permutation(N)
     sum_accuracy = 0
     sum_loss = 0
     start = time.time()
+
+    # batchsizeのデフォルト:100 Nはデフォルト60000
     for i in six.moves.range(0, N, batchsize):
+        # 配列からChainerのVariableという型（クラス）のオブジェクトに変換するという部分？
+        # trainデータからbatchsize分のデータを切り出している
+        # xpにはgpu=-1のときはnpが入っているのでnumpyで計算している
+        # permを使うことで{x,y}_trainからランダムにデータを取得している（かつforで回せる）
         x = chainer.Variable(xp.asarray(x_train[perm[i:i + batchsize]]))
         t = chainer.Variable(xp.asarray(y_train[perm[i:i + batchsize]]))
 
         # Pass the loss function (Classifier defines it) and its arguments
+        # xは手書きデータ、tが正解データ batchsize分のデータを投入している
+        # ここでlossなども計算されて更新されている模様
+        # modelを損失関数としてoptimizerに渡している
         optimizer.update(model, x, t)
+        # 以下の3行と同等になる。ネットワークがforward計算によって定義され誤差逆伝搬法により更新される
+        # model.zerograds()
+        # loss = model(x, t)
+        # loss.backward()
+        # optimizer.update()
 
+        # modelの損失を取得して保存しているか？
         if epoch == 1 and i == 0:
             with open('graph.dot', 'w') as o:
                 g = computational_graph.build_computational_graph(
@@ -108,6 +149,7 @@ for epoch in six.moves.range(1, n_epoch + 1):
                 o.write(g.dump())
             print('graph generated')
 
+        # 合計lossを計算
         sum_loss += float(model.loss.data) * len(t.data)
         sum_accuracy += float(model.accuracy.data) * len(t.data)
     end = time.time()
@@ -124,6 +166,7 @@ for epoch in six.moves.range(1, n_epoch + 1):
                              volatile='on')
         t = chainer.Variable(xp.asarray(y_test[i:i + batchsize]),
                              volatile='on')
+        # この呼び方は__call__メソッドを呼び出しているのか？->多分YES
         loss = model(x, t)
         sum_loss += float(loss.data) * len(t.data)
         sum_accuracy += float(model.accuracy.data) * len(t.data)

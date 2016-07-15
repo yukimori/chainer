@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
 import chainer
 import chainer.functions as F
 import chainer.links as L
@@ -18,6 +21,9 @@ class MnistMLP(chainer.Chain):
             l3=L.Linear(n_units, n_out),
         )
 
+    # 活性関数としてrelu()を利用
+    # l3は出力層。10個の数字のスコアに対応
+    # forwardとして書いていた処理はここに書く
     def __call__(self, x):
         h1 = F.relu(self.l1(x))
         h2 = F.relu(self.l2(h1))
