@@ -4,6 +4,9 @@
 This code is ported from the following implementation written in Torch.
 https://github.com/tomsercu/lstm
 
+ptb(Penn Tree Bank)をLSTM(Long Short Term Memory)を使ったリカレントニューラルネットワーク(RNN)で学習する
+
+LSTMは過去の出力を入力できる活性化関数
 """
 from __future__ import division
 from __future__ import print_function
