@@ -10,7 +10,9 @@ from chainer.training import extensions
 
 
 # Network definition
+# MLP:Multi Layer Perceptron（多層パーセプトロン）
 class MLP(chainer.Chain):
+    # ネットワークの定義。使う層を定義
     def __init__(self, n_units, n_out):
         super(MLP, self).__init__(
             # the size of the inputs to each layer will be inferred
@@ -20,6 +22,8 @@ class MLP(chainer.Chain):
             l3=L.Linear(None, n_out),  # n_units -> n_out
         )
 
+    # 具体的なネットワークを定義
+    # l1とl2の出力に活性化関数reluを利用
     def __call__(self, x):
         h1 = F.relu(self.l1(x))
         h2 = F.relu(self.l2(h1))
@@ -51,23 +55,30 @@ def main():
     # Set up a neural network to train
     # Classifier reports softmax cross entropy loss and accuracy at every
     # iteration, which will be used by the PrintReport extension below.
+    # モデルとはニューラルネットワークのことだと思われる
     model = L.Classifier(MLP(args.unit, 10))
     if args.gpu >= 0:
         chainer.cuda.get_device(args.gpu).use()  # Make a specified GPU current
         model.to_gpu()  # Copy the model to the GPU
 
     # Setup an optimizer
+    # 最適化手法を設定
     optimizer = chainer.optimizers.Adam()
     optimizer.setup(model)
 
     # Load the MNIST dataset
+    # train,testはnumpy配列
     train, test = chainer.datasets.get_mnist()
 
+    # 内部でchainer.iterators.SerialIteratorが内部でchainer.dataset.iteratorを読んでいる
+    # エポックごとに自動でミニバッチを作ってくれる
+    # batchsizeはSGDで学習させる1回分の回数
     train_iter = chainer.iterators.SerialIterator(train, args.batchsize)
     test_iter = chainer.iterators.SerialIterator(test, args.batchsize,
                                                  repeat=False, shuffle=False)
 
     # Set up a trainer
+    # Updater 最適化手法や利用するGPUなどを指定する
     updater = training.StandardUpdater(train_iter, optimizer, device=args.gpu)
     trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
 
