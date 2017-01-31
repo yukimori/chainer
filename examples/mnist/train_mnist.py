@@ -111,5 +111,10 @@ def main():
     # Run the training
     trainer.run()
 
+    print("save the model")
+    chainer.serializers.save_npz('mnist_model', model)
+    print("save the optimizer")
+    chainer.serializers.save_npz('mnist_optimizer', optimizer)
+
 if __name__ == '__main__':
     main()
