@@ -7,6 +7,7 @@ import chainer.functions as F
 import chainer.links as L
 from chainer import training
 from chainer.training import extensions
+import numpy as np
 
 
 # Network definition
@@ -26,6 +27,38 @@ class MLP(chainer.Chain):
         return self.l3(h2)
 
 
+def evaluate(unit, batchsize):
+    model = L.Classifier(MLP(unit, 10))
+    print('Load model from mnist_model')
+    chainer.serializers.load_npz("mnist_model", model)
+    # Setup an optimizer
+    optimizer = chainer.optimizers.Adam()
+    optimizer.setup(model)
+    print('Load optimizer from minist_optimizer')
+    chainer.serializers.load_npz("mnist_optimizer", optimizer)
+
+    # Load the MNIST dataset
+    train, test = chainer.datasets.get_mnist()
+
+    train_iter = chainer.iterators.SerialIterator(train, batchsize)
+    test_iter = chainer.iterators.SerialIterator(test, batchsize, repeat=False, shuffle=False)
+    sum_accuracy = 0
+    sum_loss = 0
+    print(type(test_iter))
+    print(type(test_iter.next()))
+    i = 0
+    for batch in test_iter:
+        for data in batch:
+            x = chainer.Variable(data[0].reshape(1, 784), volatile='on')
+            # t = chainer.Variable(np.asarray(data[1]), volatile='on')
+            res = model.predictor(x)
+            print(type(res))
+            print(res.data)
+            print("expect:", data[1])
+            print("predict:", np.argmax(res.data))
+        break
+            
+
 def main():
     parser = argparse.ArgumentParser(description='Chainer example: MNIST')
     parser.add_argument('--batchsize', '-b', type=int, default=100,
@@ -40,6 +73,7 @@ def main():
                         help='Resume the training from snapshot')
     parser.add_argument('--unit', '-u', type=int, default=1000,
                         help='Number of units')
+    parser.add_argument('--test', action="store_true", help='test with given model and optimizer')
     args = parser.parse_args()
 
     print('GPU: {}'.format(args.gpu))
@@ -56,6 +90,11 @@ def main():
         chainer.cuda.get_device(args.gpu).use()  # Make a specified GPU current
         model.to_gpu()  # Copy the model to the GPU
 
+    if args.test:
+        evaluate(unit=args.unit, batchsize=args.batchsize)
+        import sys
+        sys.exit(0)
+        
     # Setup an optimizer
     optimizer = chainer.optimizers.Adam()
     optimizer.setup(model)
@@ -103,6 +142,7 @@ def main():
 
     # Print a progress bar to stdout
     trainer.extend(extensions.ProgressBar())
+
 
     if args.resume:
         # Resume from a snapshot
