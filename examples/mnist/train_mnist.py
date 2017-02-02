@@ -12,7 +12,6 @@ import numpy as np
 
 # Network definition
 class MLP(chainer.Chain):
-
     def __init__(self, n_units, n_out):
         super(MLP, self).__init__(
             # the size of the inputs to each layer will be inferred
@@ -28,36 +27,37 @@ class MLP(chainer.Chain):
 
 
 def evaluate(unit, batchsize):
-    model = L.Classifier(MLP(unit, 10))
+    # モデルを生成してからでないと保存したファイルが読み込めない
     print('Load model from mnist_model')
+    model = L.Classifier(MLP(unit, 10))
     chainer.serializers.load_npz("mnist_model", model)
     # Setup an optimizer
+    print('Load optimizer from minist_optimizer')
     optimizer = chainer.optimizers.Adam()
     optimizer.setup(model)
-    print('Load optimizer from minist_optimizer')
     chainer.serializers.load_npz("mnist_optimizer", optimizer)
 
     # Load the MNIST dataset
     train, test = chainer.datasets.get_mnist()
 
-    train_iter = chainer.iterators.SerialIterator(train, batchsize)
+    # train_iter = chainer.iterators.SerialIterator(train, batchsize)
     test_iter = chainer.iterators.SerialIterator(test, batchsize, repeat=False, shuffle=False)
-    sum_accuracy = 0
-    sum_loss = 0
     print(type(test_iter))
     print(type(test_iter.next()))
-    i = 0
     for batch in test_iter:
         for data in batch:
+            # packpropagationが必要ない場合はvolatile=onでメモリ節約
+            # ひとつのデータを取り出してVariableにする
             x = chainer.Variable(data[0].reshape(1, 784), volatile='on')
             # t = chainer.Variable(np.asarray(data[1]), volatile='on')
+            # predictorがネットワーク おそらく__call_をよびだしている
             res = model.predictor(x)
             print(type(res))
             print(res.data)
             print("expect:", data[1])
             print("predict:", np.argmax(res.data))
         break
-            
+
 
 def main():
     parser = argparse.ArgumentParser(description='Chainer example: MNIST')
